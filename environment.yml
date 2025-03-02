@@ -1,0 +1,35 @@
+name: cs_247_project
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  # Python version
+  - python=3.8
+
+  # Core dependencies
+  - numpy=1.24.4
+  - matplotlib=3.4.2
+  - nltk=3.6.7
+  - scikit-learn
+  - sentencepiece=0.1.96
+  - pytorch=1.12.1
+  - torchvision
+  - torchaudio
+  - tensorboard=2.5.0
+  - cmake
+  - hdf5
+  - swig
+  - pip
+
+  # Pip-only packages
+  - pip:
+      - absl-py==0.12.0
+      - cachetools==4.2.2
+      - huggingface-hub==0.16.4
+      - moverscore==1.0.3
+      - pyemd
+      - requests==2.25.1
+      - scikit-optimize
+      - tokenizers==0.13.3
+      - transformers==4.30.2

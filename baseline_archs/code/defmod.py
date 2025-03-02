@@ -19,6 +19,8 @@ import tqdm
 import data
 import models
 
+
+
 logger = logging.getLogger(pathlib.Path(__file__).name)
 logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(tqdm.tqdm)
@@ -111,7 +113,7 @@ def train(
     source_arch="sgns",
     summary_logdir=pathlib.Path("logs") / "defmod-htune",
     save_dir=pathlib.Path("models") / "defmod-baseline",
-    device="cuda:0",
+    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu"), #changed for M1 Metal 
     spm_model_path=None,
     epochs=100,
     learning_rate=1e-4,
@@ -344,6 +346,7 @@ def main(args):
             args.summary_logdir,
             args.save_dir,
             args.device,
+            args.spm_model_path, #Joanna fix
         )
     elif args.do_htune:
         logger.debug("Performing defmod hyperparameter tuning")
