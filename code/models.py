@@ -174,3 +174,80 @@ class RevdictModel(nn.Module):
 
     def save(self, file):
         torch.save(self, file)
+
+
+class RevdictModelLightDecoder(nn.Module):
+    """A transformer architecture for Definition Modeling."""
+
+    def __init__(
+        self, vocab, d_model=256, n_head=4, n_layers=4, dropout=0.3, maxlen=512
+    ):
+        super(RevdictModel, self).__init__()
+        self.d_model = d_model
+        self.padding_idx = vocab[data.PAD]
+        self.eos_idx = vocab[data.EOS]
+        self.maxlen = maxlen
+
+        self.embedding = nn.Embedding(len(vocab), d_model, padding_idx=self.padding_idx)
+        ##Embedding for decoder (single token)
+        self.target_embedding = nn.Parameter(torch.randn(1, 1, d_model))  # (target_seq_len=1, batch_size=1, d_model)
+
+        self.positional_encoding = PositionalEncoding(
+            d_model, dropout=dropout, max_len=maxlen
+        )
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=d_model, nhead=n_head, dropout=dropout, dim_feedforward=d_model * 2
+        )
+        self.transformer_encoder = nn.TransformerEncoder(
+            encoder_layer, num_layers=n_layers
+        )
+
+        decoder_layer = nn.TransformerDecoderLayer(
+            d_model=d_model, nhead=n_head, dropout=dropout, dim_feedforward=d_model * 2
+            )
+        self.transformer_decoder = nn.TransformerDecoder(
+            decoder_layer, num_layers=n_layers
+        )
+
+        self.dropout = nn.Dropout(p=dropout)
+
+        #Decoder final linear transformation
+        self.d_proj = nn.Linear(d_model, d_model)
+
+        for name, param in self.named_parameters():
+            if param.dim() > 1:
+                nn.init.xavier_uniform_(param)
+            elif "bias" in name:
+                nn.init.zeros_(param)
+            else:  # gain parameters of the layer norm
+                nn.init.ones_(param)
+
+    def forward(self, gloss_tensor):
+        src_key_padding_mask = gloss_tensor == self.padding_idx
+        embs = self.embedding(gloss_tensor)
+        src = self.positional_encoding(embs)
+        transformer_output = self.dropout(
+            self.transformer_encoder(src, src_key_padding_mask=src_key_padding_mask.t())
+        )
+        #Decoder
+        batch_size = gloss_tensor.size(1)
+        target = self.target_embedding.repeat(1, batch_size, 1)  # (1, batch_size, d_model)
+
+        # Decoder cross-attends over the encoder outputs (the memory)
+        decoder_output = self.transformer_decoder(
+        tgt=target, 
+        memory=transformer_output, 
+        memory_key_padding_mask=src_key_padding_mask.t()
+        )  # (1, batch_size, d_model)
+
+        # Squeeze out the sequence length dimension (which is 1)
+        word_embedding = decoder_output.squeeze(0)  # (batch_size, d_model)
+
+        return self.d_proj(F.relu(word_embedding))
+
+    @staticmethod
+    def load(file):
+        return torch.load(file)
+
+    def save(self, file):
+        torch.save(self, file)

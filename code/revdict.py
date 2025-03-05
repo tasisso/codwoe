@@ -54,22 +54,24 @@ def get_parser(
         choices=("sgns", "char", "electra"),
         help="embedding architecture to use as target",
     )
+
+    #changed baseline to custom for saving new models
     parser.add_argument(
         "--summary_logdir",
         type=pathlib.Path,
-        default=pathlib.Path("logs") / f"revdict-baseline",
+        default=pathlib.Path("logs") / f"revdict-custom", 
         help="write logs for future analysis",
     )
     parser.add_argument(
         "--save_dir",
         type=pathlib.Path,
-        default=pathlib.Path("models") / f"revdict-baseline",
+        default=pathlib.Path("models") / f"revdict-custom",
         help="where to save model & vocab",
     )
     parser.add_argument(
         "--pred_file",
         type=pathlib.Path,
-        default=pathlib.Path("revdict-baseline-preds.json"),
+        default=pathlib.Path("revdict-custom-preds.json"),
         help="where to save predictions",
     )
     return parser
@@ -105,7 +107,8 @@ def train(args):
     # 2. construct model
     ## Hyperparams
     logger.debug("Setting up training environment")
-    model = models.RevdictModel(dev_dataset.vocab).to(args.device)
+    ## Custum model
+    model = models.RevdictModelLightDecoder(dev_dataset.vocab).to(args.device)
     model.train()
 
     # 3. declare optimizer & criterion
